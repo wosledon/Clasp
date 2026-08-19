@@ -88,11 +88,11 @@ public abstract class ClaspCommand
             },
         };
 
-        var stdoutTask = process.StandardOutput.ReadToEndAsync();
-        var stderrTask = process.StandardError.ReadToEndAsync();
-
         if (!process.Start())
             throw new InvalidOperationException($"无法启动进程: {fileName}");
+
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
 
         if (!string.IsNullOrEmpty(input))
         {
