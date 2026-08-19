@@ -8,6 +8,11 @@ namespace Clasp.Commands;
 [ClaspCommand("help", Description = "显示所有支持的工具")]
 internal class Help : ClaspCommand
 {
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        await Task.CompletedTask;
+    }
+
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
         var registry = CommandRegistry.Scan(Assembly.GetExecutingAssembly());

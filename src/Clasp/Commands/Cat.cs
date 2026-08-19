@@ -14,22 +14,25 @@ internal class Cat : ClaspCommand
     [ClaspOption("--lines", "-n", Description = "显示行号")]
     public bool ShowLineNumbers { get; set; }
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(TargetFile))
         {
-            WriteLine("请提供要读取的文件路径", ClaspColorType.BrightRed);
-            ShowHelp();
-            return;
+            ValidationError("请提供要读取的文件路径");
         }
 
         var path = Path.GetFullPath(TargetFile);
-
         if (!File.Exists(path))
         {
-            WriteLine($"文件不存在: {path}", ClaspColorType.BrightRed);
-            return;
+            ValidationError($"文件不存在: {path}");
         }
+
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        var path = Path.GetFullPath(TargetFile);
 
         try
         {

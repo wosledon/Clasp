@@ -11,40 +11,52 @@ internal class Port : ClaspCommand
     [ClaspOption("--timeout", Description = "超时毫秒 (默认 2000)")]
     public int Timeout { get; set; } = 2000;
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    [ClaspOption("--host", Description = "主机名或 IP")]
+    public string Host { get; set; } = string.Empty;
+
+    [ClaspOption("--port", "-p", Description = "端口号")]
+    public int PortNumber { get; set; }
+
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var host = args.Values.FirstOrDefault();
-        var portText = args.Values.Skip(1).FirstOrDefault();
+        var host = Host;
+        var portText = PortNumber == 0 ? string.Empty : PortNumber.ToString();
 
         if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(portText))
         {
-            ShowHelp();
-            return;
+            ValidationError("请提供主机和端口");
         }
 
         if (!int.TryParse(portText, out var port) || port is < 1 or > 65535)
         {
-            WriteLine($"无效端口: {portText}", ClaspColorType.BrightRed);
-            return;
+            ValidationError($"无效端口: {portText}");
         }
 
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        var portText = PortNumber == 0 ? string.Empty : PortNumber.ToString();
+        var port = int.Parse(portText);
+
         using var client = new TcpClient();
-        var connect = client.ConnectAsync(host, port, cancellationToken).AsTask();
+        var connect = client.ConnectAsync(Host, port, cancellationToken).AsTask();
         var timeoutTask = Task.Delay(Math.Clamp(Timeout, 100, 60000));
 
         var completed = await Task.WhenAny(connect, timeoutTask);
         if (completed == timeoutTask)
         {
-            WriteLine($"{host}:{port} 关闭或不可达 (超时)", ClaspColorType.Yellow);
+            WriteLine($"{Host}:{port} 关闭或不可达 (超时)", ClaspColorType.Yellow);
             return;
         }
 
         if (connect.IsFaulted)
         {
-            WriteLine($"{host}:{port} 关闭或不可达 ({connect.Exception?.InnerException?.Message})", ClaspColorType.Yellow);
+            WriteLine($"{Host}:{port} 关闭或不可达 ({connect.Exception?.InnerException?.Message})", ClaspColorType.Yellow);
             return;
         }
 
-        WriteLine($"{host}:{port} 开放", ClaspColorType.BrightGreen);
+        WriteLine($"{Host}:{port} 开放", ClaspColorType.BrightGreen);
     }
 }

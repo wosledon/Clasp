@@ -14,36 +14,51 @@ internal class Base64 : ClaspCommand
     [ClaspOption("--file", "-f", Description = "从文件读取内容")]
     public string TargetFile { get; set; } = string.Empty;
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    [ClaspOption("--input", "-i", Description = "要编码或解码的文本")]
+    public string Input { get; set; } = string.Empty;
+
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var input = args.Values.FirstOrDefault();
+        var input = Input;
         if (!string.IsNullOrWhiteSpace(TargetFile))
         {
             var path = Path.GetFullPath(TargetFile);
             if (!File.Exists(path))
             {
-                WriteLine($"文件不存在: {path}", ClaspColorType.BrightRed);
-                return;
+                ValidationError($"文件不存在: {path}");
             }
-            input = await File.ReadAllTextAsync(path, cancellationToken);
+            return;
         }
-        else if (string.IsNullOrWhiteSpace(input) && Console.IsInputRedirected)
-        {
-            input = await ReadStandardInputAsync(cancellationToken);
-        }
+
+        if (string.IsNullOrWhiteSpace(input) && Console.IsInputRedirected)
+            return;
 
         if (string.IsNullOrWhiteSpace(input))
         {
-            ShowHelp();
-            return;
+            ValidationError("请提供要编码或解码的文本");
+        }
+
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        if (!string.IsNullOrWhiteSpace(TargetFile))
+        {
+            var path = Path.GetFullPath(TargetFile);
+            var input = await File.ReadAllTextAsync(path, cancellationToken);
+        }
+        else if (string.IsNullOrWhiteSpace(Input) && Console.IsInputRedirected)
+        {
+            Input = await ReadStandardInputAsync(cancellationToken);
         }
 
         try
         {
             if (Decode)
-                WriteLine(Encoding.UTF8.GetString(Convert.FromBase64String(input.Trim())));
+                WriteLine(Encoding.UTF8.GetString(Convert.FromBase64String(Input.Trim())));
             else
-                WriteLine(Convert.ToBase64String(Encoding.UTF8.GetBytes(input)));
+                WriteLine(Convert.ToBase64String(Encoding.UTF8.GetBytes(Input)));
         }
         catch (Exception ex)
         {

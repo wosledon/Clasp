@@ -11,6 +11,11 @@ internal class Env : ClaspCommand
     [ClaspOption("--name", Description = "按名称模糊过滤")]
     public string Name { get; set; } = string.Empty;
 
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        await Task.CompletedTask;
+    }
+
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
         var entries = Environment.GetEnvironmentVariables()

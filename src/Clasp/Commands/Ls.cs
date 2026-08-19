@@ -11,7 +11,7 @@ internal class ListFiles : ClaspCommand
     [ClaspOption("--dir", "-d", Description = "要列出的目录，默认为当前目录")]
     public string TargetDir { get; set; } = string.Empty;
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
         var targetDir = string.IsNullOrWhiteSpace(TargetDir)
             ? Environment.CurrentDirectory
@@ -22,6 +22,15 @@ internal class ListFiles : ClaspCommand
             WriteLine($"目录不存在: {targetDir}", ClaspColorType.BrightRed);
             return;
         }
+
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        var targetDir = string.IsNullOrWhiteSpace(TargetDir)
+            ? Environment.CurrentDirectory
+            : Path.GetFullPath(TargetDir);
 
         var entries = new List<(string Text, ClaspColorType? Color)>();
         try

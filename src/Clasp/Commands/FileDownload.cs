@@ -41,29 +41,35 @@ internal class FileDownload : ClaspCommand
     [ClaspOption("--no-head", Description = "跳过 HEAD 探测，直接下载")]
     public bool NoHead { get; set; }
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(UrlFile))
         {
             if (!File.Exists(UrlFile))
             {
-                WriteLine($"URL 文件不存在: {UrlFile}", ClaspColorType.BrightRed);
-                ShowHelp();
-                return;
+                ValidationError($"URL 文件不存在: {UrlFile}");
             }
 
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Url))
+        {
+            ValidationError("请提供下载地址");
+        }
+
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        if (!string.IsNullOrWhiteSpace(UrlFile))
+        {
             Url = (await File.ReadAllTextAsync(UrlFile, cancellationToken)).Trim();
         }
         else if (ReadUrlFromStdin)
         {
             Url = (await Console.In.ReadToEndAsync(cancellationToken)).Trim();
-        }
-
-        if (string.IsNullOrWhiteSpace(Url))
-        {
-            WriteLine("请提供下载地址", ClaspColorType.BrightRed);
-            ShowHelp();
-            return;
         }
 
         var fileName = string.IsNullOrWhiteSpace(Output)

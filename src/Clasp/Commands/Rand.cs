@@ -27,6 +27,11 @@ internal class Rand : ClaspCommand
     [ClaspOption("--count", "-n", Description = "生成数量 (默认 1)")]
     public int Count { get; set; } = 1;
 
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        await Task.CompletedTask;
+    }
+
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
         var type = Type.Trim().ToLowerInvariant();

@@ -15,6 +15,11 @@ internal class Uuid : ClaspCommand
     [ClaspOption("--upper", "-u", Description = "大写输出")]
     public bool Upper { get; set; }
 
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        await Task.CompletedTask;
+    }
+
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
         var count = Math.Clamp(Count, 1, 1000);

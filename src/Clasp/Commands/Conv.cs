@@ -17,23 +17,43 @@ internal class Conv : ClaspCommand
         ["tb"] = 1024 * 1024 * 1024 * 1024.0
     };
 
+    [ClaspOption("--number", "-n", Description = "数值")]
+    public double Number { get; set; }
+
+    [ClaspOption("--from", Description = "源单位，如 b/kb/mb/gb/tb 或 c/f/k")]
+    public string From { get; set; } = string.Empty;
+
+    [ClaspOption("--to", Description = "目标单位，如 b/kb/mb/gb/tb 或 c/f/k")]
+    public string To { get; set; } = string.Empty;
+
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        var from = From;
+        var to = To;
+
+        if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
+        {
+            ValidationError("请提供 --from 和 --to");
+        }
+
+        if (!ByteUnits.ContainsKey(from.ToLowerInvariant()) && !IsTempUnit(from))
+        {
+            ValidationError($"不支持的单位: {from}");
+        }
+
+        if (!ByteUnits.ContainsKey(to.ToLowerInvariant()) && !IsTempUnit(to))
+        {
+            ValidationError($"不支持的单位: {to}");
+        }
+
+        await Task.CompletedTask;
+    }
+
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var values = args.Values;
-        if (values.Count < 3)
-        {
-            ShowHelp();
-            return;
-        }
-
-        if (!double.TryParse(values[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
-        {
-            WriteLine($"无效数值: {values[0]}", ClaspColorType.BrightRed);
-            return;
-        }
-
-        var from = values[1];
-        var to = values[2];
+        var number = Number;
+        var from = From;
+        var to = To;
 
         if (ByteUnits.TryGetValue(from, out var fromFactor) && ByteUnits.TryGetValue(to, out var toFactor))
         {

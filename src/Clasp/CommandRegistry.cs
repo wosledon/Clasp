@@ -69,6 +69,16 @@ sealed class CommandRegistry
 
         try
         {
+            await command.ValidateAsync(commandArgs, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return 1;
+        }
+
+        try
+        {
             await command.ExecuteAsync(commandArgs, CancellationToken.None);
         }
         catch (Exception ex)

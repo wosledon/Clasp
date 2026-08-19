@@ -12,17 +12,28 @@ internal class Jwt : ClaspCommand
     [ClaspOption("--compact", "-c", Description = "压缩 JSON 输出")]
     public bool Compact { get; set; }
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    [ClaspOption("--token", "-t", Description = "要解码的 JWT")]
+    public string Token { get; set; } = string.Empty;
+
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var token = args.Values.FirstOrDefault();
+        var token = Token;
         if (string.IsNullOrWhiteSpace(token) && Console.IsInputRedirected)
             token = await ReadStandardInputAsync(cancellationToken);
 
         if (string.IsNullOrWhiteSpace(token))
         {
-            ShowHelp();
-            return;
+            ValidationError("请提供要解码的 JWT");
         }
+
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        var token = Token;
+        if (string.IsNullOrWhiteSpace(token) && Console.IsInputRedirected)
+            token = await ReadStandardInputAsync(cancellationToken);
 
         var parts = token.Trim().Split('.');
         if (parts.Length != 3)

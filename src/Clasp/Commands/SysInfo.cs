@@ -18,6 +18,11 @@ internal class SysInfo : ClaspCommand
     [ClaspOption("--disk", Description = "仅显示磁盘信息")]
     public bool DiskOnly { get; set; }
 
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        await Task.CompletedTask;
+    }
+
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
         var showAll = !CpuOnly && !MemOnly && !DiskOnly;

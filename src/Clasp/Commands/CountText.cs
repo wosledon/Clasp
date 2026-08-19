@@ -15,28 +15,37 @@ internal class CountText : ClaspCommand
     [ClaspOption("--chars", "-c", Description = "仅显示字符数")]
     public bool CharsOnly { get; set; }
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
-    {
-        var input = args.Values.FirstOrDefault();
+    [ClaspOption("--input", "-i", Description = "要统计的文本或文件路径")]
+    public string Input { get; set; } = string.Empty;
 
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
         string text;
-        if (!string.IsNullOrWhiteSpace(input) && File.Exists(input))
+        if (!string.IsNullOrWhiteSpace(Input) && File.Exists(Input))
         {
-            text = await File.ReadAllTextAsync(input, cancellationToken);
+            text = await File.ReadAllTextAsync(Input, cancellationToken);
         }
         else if (Console.IsInputRedirected)
         {
             text = await ReadStandardInputAsync(cancellationToken);
         }
-        else if (!string.IsNullOrWhiteSpace(input))
+        else if (!string.IsNullOrWhiteSpace(Input))
         {
-            text = input;
+            text = Input;
         }
         else
         {
-            ShowHelp();
-            return;
+            ValidationError("请提供要统计的文本或文件路径");
         }
+
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        var text = !string.IsNullOrWhiteSpace(Input) && File.Exists(Input)
+            ? await File.ReadAllTextAsync(Input, cancellationToken)
+            : Input;
 
         var lineCount = string.IsNullOrEmpty(text)
             ? 0

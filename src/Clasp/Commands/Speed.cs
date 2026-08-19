@@ -18,21 +18,26 @@ internal class Speed : ClaspCommand
     [ClaspOption("--size", "-s", Description = "下载上限 MB (默认 0 = 不限)")]
     public int Size { get; set; }
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    [ClaspOption("--url", "-u", Description = "测速地址")]
+    public string Url { get; set; } = string.Empty;
+
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var url = args.Values.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+        if (string.IsNullOrWhiteSpace(Url) || !Uri.TryCreate(Url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
         {
-            WriteLine("请提供有效的 HTTP(S) 地址", ClaspColorType.BrightRed);
-            ShowHelp();
-            return;
+            ValidationError("请提供有效的 HTTP(S) 地址");
         }
 
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
         var seconds = Math.Clamp(Seconds, 1, 300);
         var threads = Math.Clamp(Threads, 1, 64);
         var capBytes = Size <= 0 ? long.MaxValue : Size * 1048576L;
 
-        var rangeSupported = await SupportsRangeAsync(url);
+        var rangeSupported = await SupportsRangeAsync(Url);
         var workerCount = rangeSupported ? threads : 1;
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -55,7 +60,7 @@ internal class Speed : ClaspCommand
                     try
                     {
                         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-                        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                        using var request = new HttpRequestMessage(HttpMethod.Get, Url);
                         if (rangeSupported)
                         {
                             var start = Interlocked.Add(ref nextOffset, segment) - segment;

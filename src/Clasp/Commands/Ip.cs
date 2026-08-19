@@ -12,6 +12,11 @@ internal class Ip : ClaspCommand
     [ClaspOption("--public", "-p", Description = "查询公网 IP")]
     public bool Public { get; set; }
 
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        await Task.CompletedTask;
+    }
+
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
         if (Public)

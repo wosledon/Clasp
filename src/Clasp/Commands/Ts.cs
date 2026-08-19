@@ -12,16 +12,23 @@ internal class Ts : ClaspCommand
     [ClaspOption("--ms", Description = "毫秒时间戳")]
     public bool Milliseconds { get; set; }
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    [ClaspOption("--input", "-i", Description = "要转换的时间戳或日期")]
+    public string Input { get; set; } = string.Empty;
+
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var input = args.Values.FirstOrDefault();
+        var input = Input;
         if (string.IsNullOrWhiteSpace(input))
         {
-            ShowHelp();
-            return;
+            ValidationError("请提供要转换的时间戳或日期");
         }
 
-        if (long.TryParse(input, out var timestamp))
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        if (long.TryParse(Input, out var timestamp))
         {
             try
             {
@@ -41,7 +48,7 @@ internal class Ts : ClaspCommand
             return;
         }
 
-        if (DateTime.TryParse(input, out var date))
+        if (DateTime.TryParse(Input, out var date))
         {
             var utc = Utc
                 ? DateTime.SpecifyKind(date, DateTimeKind.Utc)
@@ -53,6 +60,6 @@ internal class Ts : ClaspCommand
             return;
         }
 
-        WriteLine($"无法解析: {input}", ClaspColorType.BrightRed);
+        WriteLine($"无法解析: {Input}", ClaspColorType.BrightRed);
     }
 }

@@ -7,9 +7,11 @@ public abstract class ClaspCommand
 {
     public abstract Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default);
 
-    public virtual Task ValidateAsync(CancellationToken cancellationToken = default)
+    public abstract Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default);
+
+    protected void ValidationError(string message)
     {
-        return Task.CompletedTask;
+        throw new InvalidOperationException(message);
     }
 
     public virtual void ShowHelp()

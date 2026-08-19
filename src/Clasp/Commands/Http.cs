@@ -18,17 +18,24 @@ internal class Http : ClaspCommand
     [ClaspOption("--timeout", Description = "超时秒数 (默认 30)")]
     public int Timeout { get; set; } = 30;
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    [ClaspOption("--url", "-u", Description = "请求地址")]
+    public string Url { get; set; } = string.Empty;
+
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var url = args.Values.FirstOrDefault();
+        var url = Url;
         if (string.IsNullOrWhiteSpace(url))
         {
-            ShowHelp();
-            return;
+            ValidationError("请提供请求地址");
         }
 
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(Math.Clamp(Timeout, 1, 600)) };
-        using var request = new HttpRequestMessage(new HttpMethod(Method.Trim().ToUpperInvariant()), url);
+        using var request = new HttpRequestMessage(new HttpMethod(Method.Trim().ToUpperInvariant()), Url);
 
         if (!string.IsNullOrWhiteSpace(Header))
         {

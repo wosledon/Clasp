@@ -9,18 +9,26 @@ namespace Clasp.Commands;
 [ClaspCommand("dns", Description = "查询域名的 A/AAAA 记录")]
 internal class DnsLookup : ClaspCommand
 {
+    [ClaspOption("--host", Description = "要查询的域名")]
+    public string Host { get; set; } = string.Empty;
+
     [ClaspOption("--type", "-t", Description = "记录类型: A/AAAA (默认 A)")]
     public string Type { get; set; } = "A";
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var host = args.Values.FirstOrDefault();
+        var host = Host.Trim();
         if (string.IsNullOrWhiteSpace(host))
         {
-            ShowHelp();
-            return;
+            ValidationError("请提供要查询的域名");
         }
 
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        var host = Host.Trim();
         var type = Type.Trim().ToUpperInvariant();
         try
         {

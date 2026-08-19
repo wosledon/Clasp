@@ -14,6 +14,11 @@ internal class Procs : ClaspCommand
     [ClaspOption("--top", "-n", Description = "按内存显示前 N 个 (默认 20)")]
     public int Top { get; set; } = 20;
 
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        await Task.CompletedTask;
+    }
+
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
         var procs = Process.GetProcesses();

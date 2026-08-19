@@ -22,14 +22,18 @@ internal class Echo : ClaspCommand
     [ClaspOption("--msg", "-m", Description = "输出内容")]
     public string Message { get; set; } = string.Empty;
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(Message))
         {
-            ShowHelp();
-            return;
+            ValidationError("请提供输出内容");
         }
 
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
         WriteLine(Level switch
         {
             LevelTypeEnum.Warning => $"[Warning] {Message}",

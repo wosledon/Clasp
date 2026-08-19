@@ -9,21 +9,31 @@ internal class UrlEnc : ClaspCommand
     [ClaspOption("--decode", "-d", Description = "解码模式")]
     public bool Decode { get; set; }
 
-    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    [ClaspOption("--input", "-i", Description = "要编码或解码的文本")]
+    public string Input { get; set; } = string.Empty;
+
+    public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var input = args.Values.FirstOrDefault();
+        var input = Input;
         if (string.IsNullOrWhiteSpace(input) && Console.IsInputRedirected)
             input = await ReadStandardInputAsync(cancellationToken);
 
         if (string.IsNullOrWhiteSpace(input))
         {
-            ShowHelp();
-            return;
+            ValidationError("请提供要编码或解码的文本");
         }
 
+        await Task.CompletedTask;
+    }
+
+    public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(Input) && Console.IsInputRedirected)
+            Input = await ReadStandardInputAsync(cancellationToken);
+
         if (Decode)
-            WriteLine(Uri.UnescapeDataString(input));
+            WriteLine(Uri.UnescapeDataString(Input));
         else
-            WriteLine(Uri.EscapeDataString(input));
+            WriteLine(Uri.EscapeDataString(Input));
     }
 }
