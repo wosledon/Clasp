@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Clasp.Plugin/Clasp.Plugin.csproj" />
+    <Project Path="src/Clasp/Clasp.csproj" />
+  </Folder>
+</Solution>
