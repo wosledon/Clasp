@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.IO;
 using System.Threading.Tasks;
 using System.Linq;
 
@@ -11,7 +12,35 @@ sealed class CommandRegistry
     public static CommandRegistry Scan(Assembly assembly)
     {
         var registry = new CommandRegistry();
+        registry.LoadAssembly(assembly);
+        return registry;
+    }
 
+    public static CommandRegistry Scan(Assembly assembly, string pluginsPath)
+    {
+        var registry = Scan(assembly);
+
+        if (!string.IsNullOrWhiteSpace(pluginsPath) && Directory.Exists(pluginsPath))
+        {
+            foreach (var dll in Directory.GetFiles(pluginsPath, "*.dll", SearchOption.TopDirectoryOnly))
+            {
+                try
+                {
+                    var pluginAssembly = Assembly.LoadFrom(dll);
+                    registry.LoadAssembly(pluginAssembly);
+                }
+                catch
+                {
+                    // ignore unloadable plugin assemblies
+                }
+            }
+        }
+
+        return registry;
+    }
+
+    private void LoadAssembly(Assembly assembly)
+    {
         foreach (var type in assembly.GetTypes())
         {
             if (!typeof(Clasp.Plugin.ClaspCommand).IsAssignableFrom(type) || type.IsAbstract)
@@ -22,10 +51,8 @@ sealed class CommandRegistry
                 continue;
 
             foreach (var name in attr.Names)
-                registry._commands[name] = type;
+                _commands[name] = type;
         }
-
-        return registry;
     }
 
     public async Task<int> DispatchAsync(string[] args)

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 
 using Clasp.Plugin;
@@ -15,7 +16,8 @@ internal class Help : ClaspCommand
 
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var registry = CommandRegistry.Scan(Assembly.GetExecutingAssembly());
+        var pluginsPath = Path.Combine(AppContext.BaseDirectory, "plugins");
+        var registry = CommandRegistry.Scan(Assembly.GetExecutingAssembly(), pluginsPath);
         foreach (var line in ClaspHelp.RenderCommandList(registry.GetCommands()))
             WriteLine(line);
 

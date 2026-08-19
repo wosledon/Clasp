@@ -1,6 +1,9 @@
 ﻿using System.Reflection;
-using System.Collections.Generic;
+using System.IO;
 
-var registry = CommandRegistry.Scan(Assembly.GetExecutingAssembly());
+var pluginsPath = Path.Combine(AppContext.BaseDirectory, "plugins");
+Directory.CreateDirectory(pluginsPath);
+
+var registry = CommandRegistry.Scan(Assembly.GetExecutingAssembly(), pluginsPath);
 await registry.DispatchAsync(args);
 return 0;

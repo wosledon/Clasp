@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/plugins/">
+    <Project Path="plugins/ExamplePlugin/ExamplePlugin.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Clasp.Plugin/Clasp.Plugin.csproj" />
     <Project Path="src/Clasp/Clasp.csproj" />
