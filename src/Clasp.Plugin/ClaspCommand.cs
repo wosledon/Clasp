@@ -84,9 +84,11 @@ public abstract class ClaspCommand
                 RedirectStandardError = true,
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding = Encoding.UTF8,
-                StandardInputEncoding = Encoding.UTF8,
             },
         };
+
+        if (!string.IsNullOrEmpty(input))
+            process.StartInfo.StandardInputEncoding = Encoding.UTF8;
 
         if (!process.Start())
             throw new InvalidOperationException($"无法启动进程: {fileName}");
