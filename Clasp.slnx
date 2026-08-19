@@ -3,4 +3,7 @@
     <Project Path="src/Clasp.Plugin/Clasp.Plugin.csproj" />
     <Project Path="src/Clasp/Clasp.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Clasp.Tests/Clasp.Tests.csproj" />
+  </Folder>
 </Solution>

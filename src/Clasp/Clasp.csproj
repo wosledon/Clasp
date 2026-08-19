@@ -11,4 +11,8 @@
     <ProjectReference Include="..\Clasp.Plugin\Clasp.Plugin.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Clasp.Tests" />
+  </ItemGroup>
+
 </Project>
