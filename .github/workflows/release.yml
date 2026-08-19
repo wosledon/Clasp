@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            ext: .exe
+          - os: ubuntu-latest
+            rid: linux-x64
+            ext: ''
+          - os: macos-14
+            rid: osx-arm64
+            ext: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish self-contained (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          dotnet publish src/Clasp/Clasp.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/self/${{ matrix.rid }}
+          Rename-Item -Path "publish/self/${{ matrix.rid }}/Clasp${{ matrix.ext }}" -NewName "clasp${{ matrix.ext }}"
+          Compress-Archive -Path "publish/self/${{ matrix.rid }}/*" -DestinationPath "clasp-${{ github.ref_name }}-${{ matrix.rid }}-sc.zip"
+        shell: pwsh
+
+      - name: Publish self-contained (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          dotnet publish src/Clasp/Clasp.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/self/${{ matrix.rid }}
+          mv publish/self/${{ matrix.rid }}/Clasp${{ matrix.ext }} publish/self/${{ matrix.rid }}/clasp${{ matrix.ext }}
+          cd publish/self/${{ matrix.rid }}
+          zip -r ../../../clasp-${{ github.ref_name }}-${{ matrix.rid }}-sc.zip .
+        shell: bash
+
+      - name: Publish framework-dependent (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          dotnet publish src/Clasp/Clasp.csproj -c Release -r ${{ matrix.rid }} --self-contained false -p:PublishSingleFile=true -o publish/fd/${{ matrix.rid }}
+          Rename-Item -Path "publish/fd/${{ matrix.rid }}/Clasp${{ matrix.ext }}" -NewName "clasp${{ matrix.ext }}"
+          Compress-Archive -Path "publish/fd/${{ matrix.rid }}/*" -DestinationPath "clasp-${{ github.ref_name }}-${{ matrix.rid }}-fd.zip"
+        shell: pwsh
+
+      - name: Publish framework-dependent (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          dotnet publish src/Clasp/Clasp.csproj -c Release -r ${{ matrix.rid }} --self-contained false -p:PublishSingleFile=true -o publish/fd/${{ matrix.rid }}
+          mv publish/fd/${{ matrix.rid }}/Clasp${{ matrix.ext }} publish/fd/${{ matrix.rid }}/clasp${{ matrix.ext }}
+          cd publish/fd/${{ matrix.rid }}
+          zip -r ../../../clasp-${{ github.ref_name }}-${{ matrix.rid }}-fd.zip .
+        shell: bash
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rid }}
+          path: |
+            clasp-${{ github.ref_name }}-*-sc.zip
+            clasp-${{ github.ref_name }}-*-fd.zip
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
