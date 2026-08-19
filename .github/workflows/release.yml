@@ -53,7 +53,7 @@ jobs:
       - name: Publish framework-dependent (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          dotnet publish src/Clasp/Clasp.csproj -c Release -r ${{ matrix.rid }} --self-contained false -o publish/fd/${{ matrix.rid }}
+          dotnet publish src/Clasp/Clasp.csproj -c Release -r ${{ matrix.rid }} --self-contained false -p:PublishSingleFile=true -o publish/fd/${{ matrix.rid }}
           Rename-Item -Path "publish/fd/${{ matrix.rid }}/Clasp${{ matrix.ext }}" -NewName "clasp${{ matrix.ext }}"
           Compress-Archive -Path "publish/fd/${{ matrix.rid }}/*" -DestinationPath "clasp-${{ github.ref_name }}-${{ matrix.rid }}-fd.zip"
         shell: pwsh
@@ -61,7 +61,7 @@ jobs:
       - name: Publish framework-dependent (Unix)
         if: matrix.os != 'windows-latest'
         run: |
-          dotnet publish src/Clasp/Clasp.csproj -c Release -r ${{ matrix.rid }} --self-contained false -o publish/fd/${{ matrix.rid }}
+          dotnet publish src/Clasp/Clasp.csproj -c Release -r ${{ matrix.rid }} --self-contained false -p:PublishSingleFile=true -o publish/fd/${{ matrix.rid }}
           mv publish/fd/${{ matrix.rid }}/Clasp${{ matrix.ext }} publish/fd/${{ matrix.rid }}/clasp${{ matrix.ext }}
           cd publish/fd/${{ matrix.rid }}
           zip -r ../../../clasp-${{ github.ref_name }}-${{ matrix.rid }}-fd.zip .
