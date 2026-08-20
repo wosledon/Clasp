@@ -33,6 +33,19 @@ internal static class CommandTestHelper
         }
     }
 
+    public static async Task<bool> ValidateThrowsAsync(ClaspCommand command, ClaspCommandArgs args)
+    {
+        try
+        {
+            await command.ValidateAsync(args, CancellationToken.None);
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            return true;
+        }
+    }
+
     public static async Task RunExecuteAsync(ClaspCommand command)
     {
         await command.ExecuteAsync(new ClaspCommandArgs { Command = command.GetType().Name }, CancellationToken.None);
