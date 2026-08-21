@@ -1,14 +1,16 @@
 # Clasp
 
-A cross-platform .NET CLI toolbox with a plugin system. It ships with built-in utilities for networking, text processing, system info, and more. You can also extend it by dropping plugin DLLs into the `plugins` folder.
+[English](README.en.md) | **中文文档（主文档）**
 
-## Requirements
+Clasp 是一个跨平台的 .NET 命令行工具箱，内置网络、文本处理、系统信息等常用命令，并支持通过 `plugins` 目录加载插件 DLL 扩展命令。
+
+## 环境要求
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 
-## Quick Start
+## 快速开始
 
-Build from source:
+从源码构建：
 
 ```bash
 dotnet build
@@ -17,67 +19,67 @@ dotnet build
 ./src/Clasp/bin/Debug/net10.0/Clasp echo --msg "hello"
 ```
 
-Or download a release archive, extract it, and run `clasp` directly:
+也可以直接下载 Release 压缩包，解压后直接运行 `clasp`：
 
 ```bash
 ./clasp help
 ./clasp dns --host example.com
 ```
 
-## Build and Test
+## 构建与测试
 
 ```bash
 dotnet build
 dotnet test tests/Clasp.Tests/Clasp.Tests.csproj
 ```
 
-## Built-in Commands
+## 内置命令
 
-| Command               | Description                               |
-| --------------------- | ----------------------------------------- |
-| `b64`                 | Base64 encode/decode                      |
-| `cat`                 | Read and print a file                     |
-| `conv`                | Convert units: bytes/temperature          |
-| `count`               | Count lines, words, and characters        |
-| `date`                | Show current date and time                |
-| `dns`                 | Query DNS A/AAAA records                  |
-| `echo`                | Print a message                           |
-| `env`                 | Show environment variables                |
-| `file-download`, `fd` | Multi-threaded file downloader            |
-| `hash`                | Compute text or file hash                 |
-| `help`                | Show all available commands               |
-| `http`                | Send an HTTP request                      |
-| `ip`                  | Show local or public IP addresses         |
-| `json`                | Format or validate JSON                   |
-| `jwt`                 | Decode JWT without signature verification |
-| `kill`                | Kill processes by port or name            |
-| `ls`                  | List files in a directory                 |
-| `port`                | Check TCP port connectivity               |
-| `procs`               | List processes                            |
-| `rand`                | Generate random passwords or numbers      |
-| `speed`               | Measure download speed                    |
-| `sysinfo`             | Show system information                   |
-| `ts`                  | Convert timestamps and dates              |
-| `urlenc`              | URL encode/decode                         |
-| `uuid`                | Generate UUID v4                          |
-| `version`             | Show version                              |
+| 命令                  | 说明                     |
+| --------------------- | ------------------------ |
+| `b64`                 | Base64 编码/解码         |
+| `cat`                 | 读取并输出文件内容       |
+| `conv`                | 单位换算：字节/温度      |
+| `count`               | 统计行数、词数、字符数   |
+| `date`                | 显示当前日期和时间       |
+| `dns`                 | 查询域名的 A/AAAA 记录   |
+| `echo`                | 输出内容                 |
+| `env`                 | 显示环境变量             |
+| `file-download`、`fd` | 多线程下载文件           |
+| `hash`                | 计算文本或文件的哈希值   |
+| `help`                | 显示所有支持的工具       |
+| `http`                | 发送 HTTP 请求并显示响应 |
+| `ip`                  | 显示本机 IP 地址         |
+| `json`                | 格式化或校验 JSON        |
+| `jwt`                 | 解码 JWT，不验签         |
+| `kill`                | 按端口或进程名结束进程   |
+| `ls`                  | 列出当前目录文件         |
+| `port`                | 检测 TCP 端口是否开放    |
+| `procs`               | 列出进程信息             |
+| `rand`                | 生成随机密码或随机数     |
+| `speed`               | 网络下载测速             |
+| `sysinfo`             | 显示系统信息             |
+| `ts`                  | 时间戳与日期互转         |
+| `urlenc`              | URL 编码/解码            |
+| `uuid`                | 生成 UUID v4             |
+| `version`             | 显示版本号               |
 
-Use `--help` or `-h` with any command to see its options.
+每个命令都支持 `--help` 或 `-h` 查看选项说明。
 
-## Plugin System
+## 插件系统
 
-Clasp can load external commands from `.dll` files placed in the `plugins` folder next to the app. The folder is created automatically if it does not exist.
+Clasp 会自动读取程序目录下 `plugins` 文件夹中的 `.dll` 文件，并将其中的命令注册到主程序。若该目录不存在，程序会自动创建。
 
-### How to create a plugin
+### 如何开发插件
 
-1. Create a .NET 10 class library.
-2. Add a project reference to `src/Clasp.Plugin/Clasp.Plugin.csproj`.
-3. Create a command class that inherits from `ClaspCommand`.
-4. Decorate the class with `[ClaspCommand("name", Description = "...")]`.
-5. Add option properties decorated with `[ClaspOption("--option", "-o", Description = "...")]`.
-6. Implement `ValidateAsync` and `ExecuteAsync`.
+1. 新建一个 .NET 10 类库项目。
+2. 引用 `src/Clasp.Plugin/Clasp.Plugin.csproj`。
+3. 创建继承自 `ClaspCommand` 的命令类。
+4. 使用 `[ClaspCommand("name", Description = "...")]` 标记命令。
+5. 使用 `[ClaspOption("--option", "-o", Description = "...")]` 标记选项属性。
+6. 实现 `ValidateAsync` 和 `ExecuteAsync`。
 
-### Minimal Example
+### 最小示例
 
 ```csharp
 using Clasp.Plugin;
@@ -85,10 +87,10 @@ using Clasp.Plugin.Attributes;
 
 namespace MyPlugin;
 
-[ClaspCommand("hello", Description = "Say hello")]
+[ClaspCommand("hello", Description = "向指定名称问好")]
 internal class HelloCommand : ClaspCommand
 {
-    [ClaspOption("--name", "-n", Description = "Name to greet")]
+    [ClaspOption("--name", "-n", Description = "要问好的名称")]
     public string Name { get; set; } = "world";
 
     public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
@@ -104,19 +106,19 @@ internal class HelloCommand : ClaspCommand
 }
 ```
 
-### Build and install the plugin
+### 编译与安装
 
 ```bash
 dotnet build
 ```
 
-Then copy the compiled plugin DLL into the `plugins` folder beside the Clasp app or executable.
+然后将编译生成的插件 DLL 复制到 Clasp 程序目录下的 `plugins` 文件夹即可。
 
-### Notes
+### 说明
 
-- Plugin commands are discovered via reflection using `[ClaspCommand]` and `[ClaspOption]`.
-- The same `ClaspCommandArgs`, color helpers, and process helper APIs are available in plugins.
-- If multiple plugins define the same command name, the last loaded one wins.
+- 插件通过反射扫描 `[ClaspCommand]` 和 `[ClaspOption]` 自动注册。
+- 插件可使用 `ClaspCommandArgs`、彩色输出和进程调用等能力。
+- 若多个插件定义了同名命令，后加载的会覆盖先加载的。
 
 ## License
 
