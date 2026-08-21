@@ -1,6 +1,6 @@
 # Clasp
 
-[中文主文档](README.md) | English
+[中文](README.md) | English
 
 A cross-platform .NET CLI toolbox with a plugin system. It ships with built-in utilities for networking, text processing, system info, and more. You can also extend it by dropping plugin DLLs into the `plugins` folder.
 

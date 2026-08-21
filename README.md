@@ -1,6 +1,6 @@
 # Clasp
 
-[English](README.en.md) | **中文文档（主文档）**
+[English](README.en.md) | **中文文档**
 
 Clasp 是一个跨平台的 .NET 命令行工具箱，内置网络、文本处理、系统信息等常用命令，并支持通过 `plugins` 目录加载插件 DLL 扩展命令。
 
