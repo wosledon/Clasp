@@ -35,34 +35,46 @@ dotnet test tests/Clasp.Tests/Clasp.Tests.csproj
 
 ## Built-in Commands
 
-| Command               | Description                               |
-| --------------------- | ----------------------------------------- |
-| `b64`                 | Base64 encode/decode                      |
-| `cat`                 | Read and print a file                     |
-| `conv`                | Convert units: bytes/temperature          |
-| `count`               | Count lines, words, and characters        |
-| `date`                | Show current date and time                |
-| `dns`                 | Query DNS A/AAAA records                  |
-| `echo`                | Print a message                           |
-| `env`                 | Show environment variables                |
-| `file-download`, `fd` | Multi-threaded file downloader            |
-| `hash`                | Compute text or file hash                 |
-| `help`                | Show all available commands               |
-| `http`                | Send an HTTP request                      |
-| `ip`                  | Show local or public IP addresses         |
-| `json`                | Format or validate JSON                   |
-| `jwt`                 | Decode JWT without signature verification |
-| `kill`                | Kill processes by port or name            |
-| `ls`                  | List files in a directory                 |
-| `port`                | Check TCP port connectivity               |
-| `procs`               | List processes                            |
-| `rand`                | Generate random passwords or numbers      |
-| `speed`               | Measure download speed                    |
-| `sysinfo`             | Show system information                   |
-| `ts`                  | Convert timestamps and dates              |
-| `urlenc`              | URL encode/decode                         |
-| `uuid`                | Generate UUID v4                          |
-| `version`             | Show version                              |
+| Command               | Description                               | Aliases |
+| --------------------- | ----------------------------------------- | ------- |
+| `bar`                 | Progress bar tool                         |         |
+| `b64`                 | Base64 encode or decode                   |         |
+| `cat`                 | Read and print a file                     |         |
+| `conv`                | Convert units: bytes/temperature          |         |
+| `count`               | Count lines, words, and characters        |         |
+| `date`                | Show current date and time                |         |
+| `dns`                 | Query DNS A/AAAA records                  |         |
+| `echo`                | Print a message                           |         |
+| `env`                 | Show environment variables                |         |
+| `file-download`       | Multi-threaded file downloader            | `fd`    |
+| `gittag`              | Git tag management: list/view/create/delete tags | `gt` |
+| `grep`                | Search text patterns in files (regex supported) |   |
+| `hash`                | Compute text or file hash                 |         |
+| `help`                | Show all available commands               |         |
+| `http`                | Send an HTTP request                      |         |
+| `ip`                  | Show local or public IP addresses         |         |
+| `json`                | Enhanced JSON tool (format, query, convert) |       |
+| `jwt`                 | Decode JWT without signature verification |         |
+| `kill`                | Kill processes by port or name            |         |
+| `ls`                  | List files in a directory                 |         |
+| `password`            | Generate strong passwords (customizable rules) |   |
+| `path`                | Path utility (join, normalize, get info)  |         |
+| `port`                | Check TCP port connectivity               |         |
+| `procs`               | List process information                  |         |
+| `proxy`               | Start a local HTTP proxy (forward/reverse) |         |
+| `rand`                | Generate random passwords or numbers      |         |
+| `scan`                | Scan open ports on a host                 |         |
+| `serve`               | Start a static file server (for development) |     |
+| `speed`               | Measure download speed                    |         |
+| `spinner`             | Loading animation tool                    |         |
+| `sysinfo`             | Show system information                   |         |
+| `table`               | Render JSON/CSV/text as a table           |         |
+| `ts`                  | Convert timestamps and dates              |         |
+| `urlenc`              | URL encode or decode                      |         |
+| `uuid`                | Generate UUID (v4)                        |         |
+| `version`             | Show version                              |         |
+| `watch`               | Watch file/directory changes and run commands |   |
+| `zip`                 | Create/list/extract archives (zip/tar/tar.gz/tar.br) | |
 
 Use `--help` or `-h` with any command to see its options.
 
