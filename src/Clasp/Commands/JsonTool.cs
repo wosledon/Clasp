@@ -1,57 +1,65 @@
-using System.Text.Json;
-
 using Clasp.Plugin;
+using System.IO;
 using Clasp.Plugin.Attributes;
+using System.Text.Json;
 
 namespace Clasp.Commands;
 
-[ClaspCommand("json", Description = "格式化或校验 JSON")]
+[ClaspCommand("json", Description = "增强JSON工具（格式化、查询、转换）")]
 internal class JsonTool : ClaspCommand
 {
-    [ClaspOption("--compact", "-c", Description = "压缩为单行输出")]
-    public bool Compact { get; set; }
+    [ClaspOption("--file", "-f", Description = "JSON文件路径")]
+    public string File { get; set; } = string.Empty;
 
-    [ClaspOption("--input", "-i", Description = "要格式化的 JSON 文本或文件路径")]
+    [ClaspOption("--input", "-i", Description = "JSON文本输入")]
     public string Input { get; set; } = string.Empty;
+
+    [ClaspOption("--query", "-q", Description = "JSON查询（属性名）")]
+    public string Query { get; set; } = string.Empty;
+
+    [ClaspOption("--pretty", "-p", Description = "美化输出")]
+    public bool Pretty { get; set; } = true;
 
     public override async Task ValidateAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var input = Input;
-        if (string.IsNullOrWhiteSpace(input) && Console.IsInputRedirected)
-            input = await ReadStandardInputAsync(cancellationToken);
-
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            ValidationError("请提供要格式化的 JSON 文本或文件路径");
-        }
-
+        if (string.IsNullOrEmpty(File) && string.IsNullOrEmpty(Input))
+            ValidationError("请提供 --file 或 --input 输入内容");
         await Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(Input) && Console.IsInputRedirected)
-            Input = await ReadStandardInputAsync(cancellationToken);
-
-        string json;
-        if (File.Exists(Input))
+        string json = Input;
+        if (!string.IsNullOrEmpty(File))
         {
-            json = await File.ReadAllTextAsync(Input, cancellationToken);
-        }
-        else
-        {
-            json = Input;
+            json = System.IO.File.ReadAllText(File);
         }
 
         try
         {
             using var doc = JsonDocument.Parse(json);
-            var formatted = JsonSerializer.Serialize(doc.RootElement, new JsonSerializerOptions { WriteIndented = !Compact });
-            WriteLine(formatted);
+            var element = doc.RootElement;
+
+            if (!string.IsNullOrEmpty(Query))
+            {
+                if (element.TryGetProperty(Query, out var prop))
+                {
+                    WriteLine(prop.GetRawText(), ClaspColorType.Green);
+                }
+                else
+                {
+                    WriteLine("未找到属性: " + Query, ClaspColorType.Yellow);
+                }
+                return;
+            }
+
+            var options = new JsonSerializerOptions { WriteIndented = Pretty };
+            var prettyJson = JsonSerializer.Serialize(element, options);
+            WriteLine(prettyJson, ClaspColorType.Cyan);
         }
-        catch (Exception ex)
+        catch (JsonException ex)
         {
-            WriteLine($"JSON 无效: {ex.Message}", ClaspColorType.BrightRed);
+            WriteLine("JSON解析失败: " + ex.Message, ClaspColorType.Red);
         }
     }
 }
