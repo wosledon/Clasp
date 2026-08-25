@@ -1,5 +1,6 @@
 using Clasp.Plugin;
 using Clasp.Plugin.Attributes;
+using System.Reflection;
 
 namespace Clasp.Commands;
 
@@ -16,7 +17,11 @@ internal class Version : ClaspCommand
 
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var version = typeof(Version).Assembly.GetName().Version?.ToString() ?? "0.0.0";
+        var version = typeof(Version).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion
+            ?? typeof(Version).Assembly.GetName().Version?.ToString()
+            ?? "0.0.0";
 
         if (Short)
         {
