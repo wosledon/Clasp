@@ -1,5 +1,6 @@
 using Clasp.Plugin;
 using Clasp.Plugin.Attributes;
+using System.Reflection;
 
 namespace Clasp.Commands;
 
@@ -48,7 +49,18 @@ internal class Update : ClaspCommand
             var htmlUrl = root.GetProperty("html_url").GetString();
             var body = root.GetProperty("body").GetString();
 
+            var currentVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
+            var remoteVersion = (tagName ?? "").TrimStart('v');
+
+            WriteLine($"当前版本：{currentVersion}");
             WriteLine($"最新版本：{name ?? tagName}");
+
+            if (!IsNewerVersion(remoteVersion, currentVersion))
+            {
+                WriteLine("当前已是最新版本。");
+                return;
+            }
+
             WriteLine($"发布页面：{htmlUrl}");
 
             if (!string.IsNullOrWhiteSpace(body))
@@ -185,5 +197,31 @@ del ""%~f0""
         {
             WriteLine($"更新失败：{ex.Message}");
         }
+    }
+
+    private static bool IsNewerVersion(string remoteVersion, string currentVersion)
+    {
+        var remoteParts = remoteVersion.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var currentParts = currentVersion.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        var max = Math.Max(remoteParts.Length, currentParts.Length);
+        Span<int> remoteNums = stackalloc int[max];
+        Span<int> currentNums = stackalloc int[max];
+
+        for (int i = 0; i < max; i++)
+        {
+            remoteNums[i] = i < remoteParts.Length && int.TryParse(remoteParts[i], out var rv) ? rv : 0;
+            currentNums[i] = i < currentParts.Length && int.TryParse(currentParts[i], out var cv) ? cv : 0;
+        }
+
+        for (int i = 0; i < max; i++)
+        {
+            if (remoteNums[i] > currentNums[i])
+                return true;
+            if (remoteNums[i] < currentNums[i])
+                return false;
+        }
+
+        return false;
     }
 }

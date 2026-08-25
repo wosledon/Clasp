@@ -17,10 +17,7 @@ internal class Version : ClaspCommand
 
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
-        var version = typeof(Version).Assembly
-            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
-            .InformationalVersion
-            ?? typeof(Version).Assembly.GetName().Version?.ToString()
+        var version = typeof(Version).Assembly.GetName().Version?.ToString()
             ?? "0.0.0";
 
         if (Short)
