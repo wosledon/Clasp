@@ -1,4 +1,3 @@
-using System.Reflection;
 using Clasp.Plugin;
 using Clasp.Plugin.Attributes;
 
@@ -119,8 +118,10 @@ internal class Update : ClaspCommand
             Directory.CreateDirectory(tempDir);
             var savePath = Path.Combine(tempDir, assetName!);
 
-            await using var fs = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None);
+            await using var fs = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.Read);
             await downloadResponse.Content.CopyToAsync(fs, cancellationToken);
+            await fs.FlushAsync(cancellationToken);
+            downloadResponse.Dispose();
 
             WriteLine($"下载完成：{savePath}");
             WriteLine("正在解压...");
@@ -147,56 +148,42 @@ internal class Update : ClaspCommand
 
             WriteLine("解压完成，准备覆盖...");
             var targetDir = AppContext.BaseDirectory;
-            var copied = CopyDirectory(extractDir, targetDir);
-            WriteLine($"已更新 {copied} 个文件到：{targetDir}");
+            var exePath = Environment.ProcessPath ?? Path.Combine(targetDir, "clasp.exe");
+            var updaterPath = Path.Combine(tempDir, "clasp-update.cmd");
+            var updaterContent =
+$@"@echo off
+setlocal
 
-            WriteLine("更新完成，即将重启...");
-            RestartSelf();
+set ""SOURCE={extractDir}""
+set ""TARGET={targetDir}""
+set ""EXE={exePath}""
+
+:waitloop
+timeout /t 1 /nobreak >nul
+tasklist /fi ""imagename eq {Path.GetFileName(exePath)}"" 2>nul | find /i ""{Path.GetFileName(exePath)}"" >nul
+if not errorlevel 1 goto waitloop
+
+xcopy /E /H /Y /I ""%SOURCE%\*"" ""%TARGET%"" >nul
+start """" ""%EXE%""
+
+del ""%~f0""
+";
+            File.WriteAllText(updaterPath, updaterContent);
+
+            WriteLine($"已生成更新脚本：{updaterPath}");
+            WriteLine("即将退出并执行更新...");
+
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = updaterPath,
+                UseShellExecute = true,
+            });
+
+            Environment.Exit(0);
         }
         catch (Exception ex)
         {
             WriteLine($"更新失败：{ex.Message}");
-        }
-    }
-
-    private static int CopyDirectory(string source, string target)
-    {
-        var sourceDir = new DirectoryInfo(source);
-        if (!sourceDir.Exists)
-            return 0;
-
-        Directory.CreateDirectory(target);
-        int count = 0;
-
-        foreach (var file in sourceDir.GetFiles("*", SearchOption.AllDirectories))
-        {
-            var relative = Path.GetRelativePath(source, file.FullName);
-            var dest = Path.Combine(target, relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-            File.Copy(file.FullName, dest, true);
-            count++;
-        }
-
-        return count;
-    }
-
-    private static void RestartSelf()
-    {
-        try
-        {
-            var exePath = Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location;
-            var startInfo = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = exePath,
-                UseShellExecute = true,
-            };
-
-            System.Diagnostics.Process.Start(startInfo);
-            Environment.Exit(0);
-        }
-        catch
-        {
-            // ignore restart failures
         }
     }
 }
