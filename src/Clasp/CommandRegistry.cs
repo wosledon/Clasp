@@ -2,12 +2,42 @@ using System.Reflection;
 using System.IO;
 using System.Threading.Tasks;
 using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 sealed class CommandRegistry
 {
     private readonly Dictionary<string, Type> _commands = new(StringComparer.OrdinalIgnoreCase);
 
     private CommandRegistry() { }
+
+    private static string? GetFrameworkRefDirectory()
+    {
+        try
+        {
+            var coreLibPath = typeof(object).Assembly.Location;
+            if (string.IsNullOrEmpty(coreLibPath) || !File.Exists(coreLibPath))
+                return null;
+
+            var runtimeDir = Path.GetDirectoryName(coreLibPath)!;
+            var packsDir = Path.GetFullPath(Path.Combine(runtimeDir, "..", "..", "..", "packs", "Microsoft.NETCore.App.Ref"));
+            if (!Directory.Exists(packsDir))
+                return null;
+
+            var refDir = Directory.GetDirectories(packsDir)
+                .OrderByDescending(d => d)
+                .FirstOrDefault(d => Directory.Exists(Path.Combine(d, "ref", "net10.0")));
+
+            if (refDir is null)
+                return null;
+
+            return Path.Combine(refDir, "ref", "net10.0");
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     public static CommandRegistry Scan(Assembly assembly)
     {
@@ -34,6 +64,11 @@ sealed class CommandRegistry
                     // ignore unloadable plugin assemblies
                 }
             }
+
+            foreach (var cs in Directory.GetFiles(pluginsPath, "*.cs", SearchOption.TopDirectoryOnly))
+            {
+                LoadSourcePlugin(registry, cs);
+            }
         }
 
         return registry;
@@ -52,6 +87,80 @@ sealed class CommandRegistry
 
             foreach (var name in attr.Names)
                 _commands[name] = type;
+        }
+    }
+
+    private static void LoadSourcePlugin(CommandRegistry registry, string csPath)
+    {
+        try
+        {
+            var code = File.ReadAllText(csPath);
+            var syntaxTree = CSharpSyntaxTree.ParseText(code);
+
+            var refs = new List<MetadataReference>();
+            var addedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void AddReference(string? path)
+            {
+                if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                    return;
+
+                if (!addedPaths.Add(path))
+                    return;
+
+                try
+                {
+                    refs.Add(MetadataReference.CreateFromFile(path));
+                }
+                catch
+                {
+                    // ignore files that cannot be used as references
+                }
+            }
+
+            AddReference(typeof(Clasp.Plugin.ClaspCommand).Assembly.Location);
+
+            var baseDir = AppContext.BaseDirectory;
+            if (Directory.Exists(baseDir))
+            {
+                foreach (var dll in Directory.GetFiles(baseDir, "*.dll"))
+                    AddReference(dll);
+            }
+
+            var refDir = GetFrameworkRefDirectory();
+            if (!string.IsNullOrEmpty(refDir))
+            {
+                foreach (var dll in Directory.GetFiles(refDir, "System.Runtime.dll"))
+                    AddReference(dll);
+            }
+
+            var compilation = CSharpCompilation.Create(
+                assemblyName: Path.GetRandomFileName(),
+                syntaxTrees: new[] { syntaxTree },
+                references: refs,
+                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                    .WithMetadataImportOptions(MetadataImportOptions.All));
+
+            using var ms = new MemoryStream();
+            var emitResult = compilation.Emit(ms);
+
+            if (!emitResult.Success)
+            {
+                var errors = string.Join(
+                    Environment.NewLine,
+                    emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+
+                Console.WriteLine($"插件编译失败: {csPath}{Environment.NewLine}{errors}");
+                return;
+            }
+
+            ms.Seek(0, SeekOrigin.Begin);
+            var pluginAssembly = Assembly.Load(ms.ToArray());
+            registry.LoadAssembly(pluginAssembly);
+        }
+        catch
+        {
+            // ignore unloadable source plugins
         }
     }
 

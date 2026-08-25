@@ -80,9 +80,9 @@ dotnet test tests/Clasp.Tests/Clasp.Tests.csproj
 
 ## 插件系统
 
-Clasp 会自动读取程序目录下 `plugins` 文件夹中的 `.dll` 文件，并将其中的命令注册到主程序。若该目录不存在，程序会自动创建。
+Clasp 会自动读取程序目录下 `plugins` 文件夹中的 `.dll` 和 `.cs` 文件。`.dll` 插件通过反射加载；`.cs` 源码插件会在启动时通过 Roslyn 动态编译后加载。
 
-### 如何开发插件
+### 如何开发 DLL 插件
 
 1. 新建一个 .NET 10 类库项目。
 2. 引用 `src/Clasp.Plugin/Clasp.Plugin.csproj`。
@@ -90,6 +90,16 @@ Clasp 会自动读取程序目录下 `plugins` 文件夹中的 `.dll` 文件，�
 4. 使用 `[ClaspCommand("name", Description = "...")]` 标记命令。
 5. 使用 `[ClaspOption("--option", "-o", Description = "...")]` 标记选项属性。
 6. 实现 `ValidateAsync` 和 `ExecuteAsync`。
+
+### 如何开发 C# 源码插件
+
+1. 在 `plugins` 目录下新建 `.cs` 文件。
+2. 引用 `Clasp.Plugin` 命名空间。
+3. 创建继承自 `ClaspCommand` 的命令类。
+4. 使用 `[ClaspCommand]` 和 `[ClaspOption]` 标记命令与选项。
+5. 实现 `ValidateAsync` 和 `ExecuteAsync`。
+
+源码插件无需单独编译，Clasp 会在启动时自动编译并加载。
 
 ### 最小示例
 
@@ -126,11 +136,14 @@ dotnet build
 
 然后将编译生成的插件 DLL 复制到 Clasp 程序目录下的 `plugins` 文件夹即可。
 
+若放置的是 `.cs` 源码文件，则无需编译，直接放在 `plugins` 目录下即可。
+
 ### 说明
 
 - 插件通过反射扫描 `[ClaspCommand]` 和 `[ClaspOption]` 自动注册。
 - 插件可使用 `ClaspCommandArgs`、彩色输出和进程调用等能力。
 - 若多个插件定义了同名命令，后加载的会覆盖先加载的。
+- `.cs` 源码插件依赖 Roslyn 动态编译，需要 .NET 10 SDK 运行时环境。
 
 ## License
 

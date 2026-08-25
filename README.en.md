@@ -80,9 +80,9 @@ Use `--help` or `-h` with any command to see its options.
 
 ## Plugin System
 
-Clasp can load external commands from `.dll` files placed in the `plugins` folder next to the app. The folder is created automatically if it does not exist.
+Clasp can load external commands from `.dll` and `.cs` files placed in the `plugins` folder next to the app. `.dll` plugins are loaded via reflection; `.cs` source plugins are compiled at startup using Roslyn.
 
-### How to create a plugin
+### DLL plugins
 
 1. Create a .NET 10 class library.
 2. Add a project reference to `src/Clasp.Plugin/Clasp.Plugin.csproj`.
@@ -90,6 +90,16 @@ Clasp can load external commands from `.dll` files placed in the `plugins` folde
 4. Decorate the class with `[ClaspCommand("name", Description = "...")]`.
 5. Add option properties decorated with `[ClaspOption("--option", "-o", Description = "...")]`.
 6. Implement `ValidateAsync` and `ExecuteAsync`.
+
+### C# source plugins
+
+1. Create a `.cs` file under the `plugins` folder.
+2. Reference the `Clasp.Plugin` namespace.
+3. Create a command class that inherits from `ClaspCommand`.
+4. Decorate the class with `[ClaspCommand]` and properties with `[ClaspOption]`.
+5. Implement `ValidateAsync` and `ExecuteAsync`.
+
+Source plugins do not need manual compilation. Clasp compiles and loads them automatically at startup.
 
 ### Minimal Example
 
@@ -126,11 +136,14 @@ dotnet build
 
 Then copy the compiled plugin DLL into the `plugins` folder beside the Clasp app or executable.
 
+If you place a `.cs` source file in the `plugins` folder, no separate build step is required.
+
 ### Notes
 
 - Plugin commands are discovered via reflection using `[ClaspCommand]` and `[ClaspOption]`.
 - The same `ClaspCommandArgs`, color helpers, and process helper APIs are available in plugins.
 - If multiple plugins define the same command name, the last loaded one wins.
+- C# source plugins rely on Roslyn dynamic compilation and require the .NET 10 SDK runtime.
 
 ## License
 
