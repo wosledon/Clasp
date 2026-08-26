@@ -38,6 +38,7 @@ dotnet test tests/Clasp.Tests/Clasp.Tests.csproj
 | Command         | Description                                          | Aliases |
 | --------------- | ---------------------------------------------------- | ------- |
 | `bar`           | Progress bar tool                                    |         |
+| `branch`        | Show current branch status summary                   | `br`    |
 | `b64`           | Base64 encode or decode                              |         |
 | `cat`           | Read and print a file                                |         |
 | `conv`          | Convert units: bytes/temperature                     |         |
