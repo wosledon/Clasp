@@ -271,6 +271,11 @@ sealed class CommandRegistry
                 {
                     options[arg] = "true";
                 }
+                else if (arg.Contains("="))
+                {
+                    var eq = arg.IndexOf('=');
+                    options[arg.Substring(0, eq)] = arg.Substring(eq + 1);
+                }
                 else if (i + 1 < args.Length && !args[i + 1].StartsWith("-"))
                 {
                     options[arg] = args[i + 1];
@@ -310,16 +315,29 @@ sealed class CommandRegistry
                     }
                 }
 
-                if (valueIndex >= 0 && i + 1 < args.Length && !args[i + 1].StartsWith("-"))
+                if (valueIndex >= 0)
                 {
-                    options[$"-{shortOptions[valueIndex]}"] = args[i + 1];
-                    i++;
+                    var valuePart = shortOptions.Substring(valueIndex + 1);
+                    if (valuePart.Length > 0)
+                    {
+                        options[$"-{shortOptions[valueIndex]}"] = valuePart;
 
-                    for (var j = 0; j < valueIndex; j++)
-                        options[$"-{shortOptions[j]}"] = "true";
+                        for (var j = 0; j < valueIndex; j++)
+                            options[$"-{shortOptions[j]}"] = "true";
+                    }
+                    else if (i + 1 < args.Length && !args[i + 1].StartsWith("-"))
+                    {
+                        options[$"-{shortOptions[valueIndex]}"] = args[i + 1];
+                        i++;
 
-                    for (var j = valueIndex + 1; j < shortOptions.Length; j++)
-                        options[$"-{shortOptions[j]}"] = "true";
+                        for (var j = 0; j < valueIndex; j++)
+                            options[$"-{shortOptions[j]}"] = "true";
+                    }
+                    else
+                    {
+                        for (var j = 0; j <= valueIndex; j++)
+                            options[$"-{shortOptions[j]}"] = "true";
+                    }
                 }
                 else
                 {
