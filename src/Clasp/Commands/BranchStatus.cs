@@ -22,11 +22,22 @@ internal class BranchStatus : ClaspCommand
             ValidationError("当前目录不是 Git 仓库，无法执行 branch 命令");
         }
 
+        if (Porcelain && All)
+        {
+            ValidationError("--porcelain 与 --all 暂不支持同时使用");
+        }
+
         await Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync(ClaspCommandArgs args, CancellationToken cancellationToken = default)
     {
+        if (Porcelain)
+        {
+            await ExecutePorcelainAsync(cancellationToken);
+            return;
+        }
+
         var currentBranch = (await CmdResultTrimmedAsync("git", "rev-parse --abbrev-ref HEAD")) ?? string.Empty;
         var upstream = await CmdResultTrimmedAsync("git", "rev-parse --abbrev-ref @{upstream}");
         var aheadBehind = await CmdResultTrimmedAsync("git", "rev-list --left-right --count HEAD...@{upstream}");
@@ -69,6 +80,45 @@ internal class BranchStatus : ClaspCommand
             WriteLine("本地分支:", ClaspColorType.Green);
             var branchesResult = await CmdResultAsync("git", "branch --format='%(refname:short) %(upstream:short) %(ahead:1) %(behind:1)' --no-abbrev");
             WriteLine(string.IsNullOrWhiteSpace(branchesResult.StandardOutput) ? "暂无本地分支" : branchesResult.StandardOutput);
+        }
+    }
+
+    private async Task ExecutePorcelainAsync(CancellationToken cancellationToken)
+    {
+        var currentBranch = (await CmdResultTrimmedAsync("git", "rev-parse --abbrev-ref HEAD")) ?? string.Empty;
+        var upstream = await CmdResultTrimmedAsync("git", "rev-parse --abbrev-ref @{upstream}");
+        var aheadBehind = await CmdResultTrimmedAsync("git", "rev-list --left-right --count HEAD...@{upstream}");
+        var statusResult = await CmdResultAsync("git", "status --short --branch");
+        var recentCommitsResult = await CmdResultAsync("git", "log --oneline --decorate -n 5");
+
+        WriteLine($"branch {currentBranch}");
+        WriteLine($"upstream {upstream}");
+
+        if (!string.IsNullOrWhiteSpace(aheadBehind) && aheadBehind.Contains('\t'))
+        {
+            var parts = aheadBehind.Split('\t');
+            if (parts.Length == 2)
+            {
+                WriteLine($"ahead {parts[0]}");
+                WriteLine($"behind {parts[1]}");
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(statusResult.StandardOutput))
+        {
+            foreach (var line in statusResult.StandardOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                WriteLine($"status {line}");
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(recentCommitsResult.StandardOutput))
+        {
+            var index = 0;
+            foreach (var line in recentCommitsResult.StandardOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                WriteLine($"commit.{++index} {line}");
+            }
         }
     }
 
