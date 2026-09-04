@@ -205,11 +205,13 @@ internal class Update : ClaspCommand
       sleep 1
     done
 
-    cp -f ""$SOURCE""/* ""$TARGET"" 2>/dev/null || true
+    cp -rf ""$SOURCE""/* ""$TARGET"" 2>/dev/null || true
+    chmod +x ""$EXE"" 2>/dev/null || true
     ""$EXE"" &
     rm -f ""$0""
     ";
                 File.WriteAllText(updaterPath, updaterContent);
+                File.SetAttributes(updaterPath, File.GetAttributes(updaterPath) | FileAttributes.ReadOnly | FileAttributes.Hidden);
                 arguments = $"\"{updaterPath}\"";
             }
 
