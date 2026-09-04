@@ -52,12 +52,15 @@ sealed class CommandRegistry
 
         if (!string.IsNullOrWhiteSpace(pluginsPath) && Directory.Exists(pluginsPath))
         {
+            var cacheDir = Path.Combine(pluginsPath, ".clasp-cache");
+            Directory.CreateDirectory(cacheDir);
+
+            // 先加载所有 DLL 插件，并统一注入依赖解析
             foreach (var dll in Directory.GetFiles(pluginsPath, "*.dll", SearchOption.TopDirectoryOnly))
             {
                 try
                 {
-                    var pluginAssembly = Assembly.LoadFrom(dll);
-                    registry.LoadAssembly(pluginAssembly);
+                    LoadPluginAssembly(registry, dll, cacheDir);
                 }
                 catch
                 {
@@ -65,9 +68,19 @@ sealed class CommandRegistry
                 }
             }
 
+            // 再处理 CS 源码插件：编译为 DLL 缓存后，走和 DLL 一样的加载路径
             foreach (var cs in Directory.GetFiles(pluginsPath, "*.cs", SearchOption.TopDirectoryOnly))
             {
-                LoadSourcePlugin(registry, cs);
+                try
+                {
+                    var cachedDll = CompileSourcePlugin(cs, pluginsPath, cacheDir);
+                    if (!string.IsNullOrEmpty(cachedDll))
+                        LoadPluginAssembly(registry, cachedDll, cacheDir);
+                }
+                catch
+                {
+                    // ignore unloadable source plugins
+                }
             }
         }
 
@@ -161,6 +174,145 @@ sealed class CommandRegistry
         catch
         {
             // ignore unloadable source plugins
+        }
+    }
+
+    private static string? CompileSourcePlugin(string csPath, string pluginsPath, string cacheDir)
+    {
+        try
+        {
+            var code = File.ReadAllText(csPath);
+            var syntaxTree = CSharpSyntaxTree.ParseText(code);
+
+            var refs = new List<MetadataReference>();
+            var addedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void AddReference(string? path)
+            {
+                if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                    return;
+
+                if (!addedPaths.Add(path))
+                    return;
+
+                try
+                {
+                    refs.Add(MetadataReference.CreateFromFile(path));
+                }
+                catch
+                {
+                    // ignore files that cannot be used as references
+                }
+            }
+
+            AddReference(typeof(Clasp.Plugin.ClaspCommand).Assembly.Location);
+
+            var baseDir = AppContext.BaseDirectory;
+            if (Directory.Exists(baseDir))
+            {
+                foreach (var dll in Directory.GetFiles(baseDir, "*.dll"))
+                    AddReference(dll);
+            }
+
+            if (Directory.Exists(pluginsPath))
+            {
+                foreach (var dll in Directory.GetFiles(pluginsPath, "*.dll", SearchOption.TopDirectoryOnly))
+                    AddReference(dll);
+            }
+
+            var refDir = GetFrameworkRefDirectory();
+            if (!string.IsNullOrEmpty(refDir))
+            {
+                foreach (var dll in Directory.GetFiles(refDir, "System.Runtime.dll"))
+                    AddReference(dll);
+            }
+
+            var assemblyName = Path.GetFileNameWithoutExtension(csPath);
+            var dllPath = Path.Combine(cacheDir, $"{assemblyName}.dll");
+            var metaPath = dllPath + ".meta";
+
+            var sourceTime = File.GetLastWriteTimeUtc(csPath);
+            if (File.Exists(dllPath) && File.Exists(metaPath))
+            {
+                var cachedTime = File.ReadAllText(metaPath);
+                if (long.TryParse(cachedTime, out var cachedTicks) && cachedTicks == sourceTime.Ticks)
+                    return dllPath;
+            }
+
+            var compilation = CSharpCompilation.Create(
+                assemblyName: assemblyName,
+                syntaxTrees: new[] { syntaxTree },
+                references: refs,
+                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                    .WithMetadataImportOptions(MetadataImportOptions.All));
+
+            using var fs = new FileStream(dllPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            var emitResult = compilation.Emit(fs);
+
+            if (!emitResult.Success)
+            {
+                var errors = string.Join(
+                    Environment.NewLine,
+                    emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+
+                Console.WriteLine($"插件编译失败: {csPath}{Environment.NewLine}{errors}");
+                return null;
+            }
+
+            File.WriteAllText(metaPath, sourceTime.Ticks.ToString());
+            return dllPath;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static void LoadPluginAssembly(CommandRegistry registry, string assemblyPath, string cacheDir)
+    {
+        var baseDir = AppContext.BaseDirectory;
+        var pluginDir = Path.GetDirectoryName(assemblyPath)!;
+
+        Assembly? ResolveDependency(object? sender, ResolveEventArgs args)
+        {
+            var name = new AssemblyName(args.Name).Name;
+            if (name?.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ?? false)
+                name = name.Substring(0, name.Length - 4);
+
+            string[] searchPaths =
+            {
+                Path.Combine(pluginDir, $"{name}.dll"),
+                Path.Combine(cacheDir, $"{name}.dll"),
+                Path.Combine(baseDir, $"{name}.dll"),
+            };
+
+            foreach (var path in searchPaths)
+            {
+                if (File.Exists(path))
+                {
+                    try
+                    {
+                        return Assembly.LoadFrom(path);
+                    }
+                    catch
+                    {
+                        // ignore
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        AppDomain.CurrentDomain.AssemblyResolve += ResolveDependency;
+        try
+        {
+            var pluginAssembly = Assembly.LoadFrom(assemblyPath);
+            registry.LoadAssembly(pluginAssembly);
+        }
+        finally
+        {
+            AppDomain.CurrentDomain.AssemblyResolve -= ResolveDependency;
         }
     }
 
