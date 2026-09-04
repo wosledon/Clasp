@@ -130,9 +130,12 @@ internal class Update : ClaspCommand
             Directory.CreateDirectory(tempDir);
             var savePath = Path.Combine(tempDir, assetName!);
 
-            await using var fs = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            await downloadResponse.Content.CopyToAsync(fs, cancellationToken);
-            await fs.FlushAsync(cancellationToken);
+            await using (var fs = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.Read))
+            {
+                await downloadResponse.Content.CopyToAsync(fs, cancellationToken);
+                await fs.FlushAsync(cancellationToken);
+            }
+
             downloadResponse.Dispose();
 
             WriteLine($"下载完成：{savePath}");
