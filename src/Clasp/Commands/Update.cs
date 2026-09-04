@@ -164,34 +164,64 @@ internal class Update : ClaspCommand
             WriteLine("解压完成，准备覆盖...");
             var targetDir = AppContext.BaseDirectory;
             var exePath = Environment.ProcessPath ?? Path.Combine(targetDir, "clasp.exe");
-            var updaterPath = Path.Combine(tempDir, "clasp-update.cmd");
-            var updaterContent =
-$@"@echo off
-setlocal
+            var useWindowsUpdater = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+            string updaterPath;
+            string arguments;
 
-set ""SOURCE={extractDir}""
-set ""TARGET={targetDir}""
-set ""EXE={exePath}""
+            if (useWindowsUpdater)
+            {
+                updaterPath = Path.Combine(tempDir, "clasp-update.cmd");
+                var updaterContent =
+    $@"@echo off
+    setlocal
 
-:waitloop
-timeout /t 1 /nobreak >nul
-tasklist /fi ""imagename eq {Path.GetFileName(exePath)}"" 2>nul | find /i ""{Path.GetFileName(exePath)}"" >nul
-if not errorlevel 1 goto waitloop
+    set ""SOURCE={extractDir}""
+    set ""TARGET={targetDir}""
+    set ""EXE={exePath}""
 
-xcopy /E /H /Y /I ""%SOURCE%\*"" ""%TARGET%"" >nul
-start """" ""%EXE%""
+    :waitloop
+    timeout /t 1 /nobreak >nul
+    tasklist /fi ""imagename eq {Path.GetFileName(exePath)}"" 2>nul | find /i ""{Path.GetFileName(exePath)}"" >nul
+    if not errorlevel 1 goto waitloop
 
-del ""%~f0""
-";
-            File.WriteAllText(updaterPath, updaterContent);
+    xcopy /E /H /Y /I ""%SOURCE%\*"" ""%TARGET%"" >nul
+    start """" ""%EXE%""
+
+    del ""%~f0""
+    ";
+                File.WriteAllText(updaterPath, updaterContent);
+                arguments = $"/c \"{updaterPath}\"";
+            }
+            else
+            {
+                updaterPath = Path.Combine(tempDir, "clasp-update.sh");
+                var updaterContent =
+    @"#!/bin/sh
+    SOURCE='" + extractDir + @"'
+    TARGET='" + targetDir + @"'
+    EXE='" + exePath + @"'
+
+    while pgrep -x ""$(basename ""$EXE"")"" >/dev/null 2>&1; do
+      sleep 1
+    done
+
+    cp -f ""$SOURCE""/* ""$TARGET"" 2>/dev/null || true
+    ""$EXE"" &
+    rm -f ""$0""
+    ";
+                File.WriteAllText(updaterPath, updaterContent);
+                arguments = $"\"{updaterPath}\"";
+            }
 
             WriteLine($"已生成更新脚本：{updaterPath}");
             WriteLine("即将退出并执行更新...");
 
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = updaterPath,
-                UseShellExecute = true,
+                FileName = useWindowsUpdater ? "cmd.exe" : "/bin/sh",
+                Arguments = arguments,
+                UseShellExecute = false,
+                CreateNoWindow = true,
             });
 
             Environment.Exit(0);
