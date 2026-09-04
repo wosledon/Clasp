@@ -54,9 +54,10 @@ dotnet test tests/Clasp.Tests/Clasp.Tests.csproj
 | `help`          | Show all available commands                          |         |
 | `http`          | Send an HTTP request                                 |         |
 | `ip`            | Show local or public IP addresses                    |         |
-| `json`          | Enhanced JSON tool (format, query, convert)          |         |
+| `json`          | Enhanced JSON tool (format, query, escape/unescape)  |         |
 | `jwt`           | Decode JWT without signature verification            |         |
 | `kill`          | Kill processes by port or name                       |         |
+| `log`           | Inspect and filter log files                         |         |
 | `ls`            | List files in a directory                            |         |
 | `password`      | Generate strong passwords (customizable rules)       |         |
 | `path`          | Path utility (join, normalize, get info)             |         |
@@ -68,6 +69,7 @@ dotnet test tests/Clasp.Tests/Clasp.Tests.csproj
 | `serve`         | Start a static file server (for development)         |         |
 | `speed`         | Measure download speed                               |         |
 | `spinner`       | Loading animation tool                               |         |
+| `sshx`          | Run ssh/scp commands                                 |         |
 | `sysinfo`       | Show system information                              |         |
 | `table`         | Render JSON/CSV/text as a table                      |         |
 | `ts`            | Convert timestamps and dates                         |         |
