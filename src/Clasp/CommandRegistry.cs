@@ -230,8 +230,8 @@ sealed class CommandRegistry
     {
         var options = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var positionals = new List<string>();
-        var boolOptions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var valueOptions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var boolOptions = new HashSet<string>(StringComparer.Ordinal);
+        var valueOptions = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var property in commandType.GetProperties())
         {
@@ -361,7 +361,17 @@ sealed class CommandRegistry
 
             foreach (var name in optionAttr.Names)
             {
-                if (parsedOptions.TryGetValue(name, out var rawValue))
+                string? rawValue = null;
+                foreach (var kvp in parsedOptions)
+                {
+                    if (string.Equals(kvp.Key, name, StringComparison.Ordinal))
+                    {
+                        rawValue = kvp.Value;
+                        break;
+                    }
+                }
+
+                if (rawValue != null)
                 {
                     var converted = ConvertValue(rawValue, property.PropertyType);
                     property.SetValue(command, converted);
