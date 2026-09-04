@@ -72,6 +72,7 @@ dotnet test tests/Clasp.Tests/Clasp.Tests.csproj
 | `sshx`          | Run ssh/scp commands                                 |         |
 | `sysinfo`       | Show system information                              |         |
 | `table`         | Render JSON/CSV/text as a table                      |         |
+| `tree`          | Display directory structure as a tree                |         |
 | `ts`            | Convert timestamps and dates                         |         |
 | `urlenc`        | URL encode or decode                                 |         |
 | `uuid`          | Generate UUID (v4)                                   |         |

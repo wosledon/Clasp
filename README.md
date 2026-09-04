@@ -72,6 +72,7 @@ dotnet test tests/Clasp.Tests/Clasp.Tests.csproj
 | `sshx`                | 调用 ssh/scp 进行远程命令执行或文件传输     |      |
 | `sysinfo`             | 显示系统信息                                |      |
 | `table`               | 将 JSON/CSV/文本输出为表格                  |      |
+| `tree`                | 以树形结构显示目录内容                      |      |
 | `ts`                  | 时间戳与日期互转                            |      |
 | `urlenc`              | URL 编码或解码                              |      |
 | `uuid`                | 生成 UUID (v4)                              |      |
