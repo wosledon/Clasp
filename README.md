@@ -59,6 +59,7 @@ dotnet test tests/Clasp.Tests/Clasp.Tests.csproj
 | `kill`                | 干掉占用端口的程序                          |      |
 | `log`                 | 快速查看和过滤日志文件                      |      |
 | `ls`                  | 列出当前目录文件                            |      |
+| `open`                | 用系统默认程序打开目录、文件或 URL          |      |
 | `password`            | 生成强密码（可定制规则）                    |      |
 | `path`                | 路径处理工具（拼接、规范化、获取信息）      |      |
 | `port`                | 检测 TCP 端口是否开放                       |      |

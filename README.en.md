@@ -59,6 +59,7 @@ dotnet test tests/Clasp.Tests/Clasp.Tests.csproj
 | `kill`          | Kill processes by port or name                       |         |
 | `log`           | Inspect and filter log files                         |         |
 | `ls`            | List files in a directory                            |         |
+| `open`          | Open a directory, file, or URL with the system default app |         |
 | `password`      | Generate strong passwords (customizable rules)       |         |
 | `path`          | Path utility (join, normalize, get info)             |         |
 | `port`          | Check TCP port connectivity                          |         |
