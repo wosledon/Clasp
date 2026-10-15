@@ -74,6 +74,12 @@ internal class Kill : ClaspCommand
 
         foreach (var pid in pids)
         {
+            if (pid == Environment.ProcessId)
+            {
+                WriteLine($"跳过 Clasp 自身进程 (PID: {pid})", ClaspColorType.Yellow);
+                continue;
+            }
+
             var name = GetProcessName(pid);
             WriteLine($"发现进程: {name} (PID: {pid})");
 
@@ -122,7 +128,7 @@ internal class Kill : ClaspCommand
                 try
                 {
                     var processName = process.ProcessName;
-                    if (processName.Contains(name, StringComparison.OrdinalIgnoreCase) && !pids.Contains(process.Id))
+                    if (Matches(processName, name) && !pids.Contains(process.Id))
                     {
                         pids.Add(process.Id);
                     }
@@ -148,12 +154,15 @@ internal class Kill : ClaspCommand
     private bool NameMatches(int pid, string name)
     {
         var processName = GetProcessName(pid);
-        return processName.Contains(name, StringComparison.OrdinalIgnoreCase);
+        return Matches(processName, name);
     }
+
+    /// <summary>进程名模糊匹配（不区分大小写）</summary>
+    private static bool Matches(string processName, string keyword)
+        => processName.Contains(keyword, StringComparison.OrdinalIgnoreCase);
 
     private List<int> FindProcessesByPort(int port)
     {
-        var pids = new List<int>();
         if (IsWindows())
         {
             try
@@ -174,27 +183,14 @@ internal class Kill : ClaspCommand
                 var output = process.StandardOutput.ReadToEnd();
                 process.WaitForExit();
 
-                foreach (var line in output.Split('\n'))
-                {
-                    if (!line.Contains($":{port} ", StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    var trimmed = line.TrimEnd();
-                    var lastSpace = trimmed.LastIndexOf(' ');
-                    if (lastSpace < 0)
-                        continue;
-
-                    var pidText = trimmed[(lastSpace + 1)..];
-                    if (int.TryParse(pidText, out var pid) && !pids.Contains(pid))
-                        pids.Add(pid);
-                }
+                return ParseNetstatListenPids(output, port);
             }
             catch
             {
                 // ignore
             }
 
-            return pids;
+            return [];
         }
 
         try
@@ -215,18 +211,63 @@ internal class Kill : ClaspCommand
             var output = process.StandardOutput.ReadToEnd();
             process.WaitForExit();
 
-            foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-            {
-                if (int.TryParse(line, out var pid) && !pids.Contains(pid))
-                    pids.Add(pid);
-            }
+            return ParseLsofPids(output);
         }
         catch
         {
             // ignore
         }
 
+        return [];
+    }
+
+    /// <summary>
+    /// 解析 netstat -ano：只取 LISTENING 的 TCP 行。
+    /// 不过滤状态会把连接到该端口的客户端进程（ESTABLISHED / TIME_WAIT）一起杀掉。
+    /// </summary>
+    internal static List<int> ParseNetstatListenPids(string output, int port)
+    {
+        var pids = new List<int>();
+        foreach (var rawLine in output.Split('\n'))
+        {
+            // 列：协议 本地地址 外部地址 状态 PID
+            var columns = rawLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (columns.Length < 5) continue;
+            if (!columns[0].Equals("TCP", StringComparison.OrdinalIgnoreCase)) continue;
+            if (!columns[3].Equals("LISTENING", StringComparison.OrdinalIgnoreCase)) continue;
+            if (!EndsWithPort(columns[1], port)) continue;
+
+            if (int.TryParse(columns[4], out var pid) && pid > 0 && !pids.Contains(pid))
+            {
+                pids.Add(pid);
+            }
+        }
+
         return pids;
+    }
+
+    /// <summary>解析 lsof -t 的一列 PID 输出</summary>
+    internal static List<int> ParseLsofPids(string output)
+    {
+        var pids = new List<int>();
+        foreach (var rawLine in output.Split('\n'))
+        {
+            if (int.TryParse(rawLine.Trim(), out var pid) && pid > 0 && !pids.Contains(pid))
+            {
+                pids.Add(pid);
+            }
+        }
+
+        return pids;
+    }
+
+    /// <summary>本地地址（如 0.0.0.0:8080 / [::]:8080）的端口是否等于目标端口</summary>
+    private static bool EndsWithPort(string address, int port)
+    {
+        var separator = address.LastIndexOf(':');
+        return separator >= 0
+            && int.TryParse(address[(separator + 1)..], out var parsed)
+            && parsed == port;
     }
 
     private string GetProcessName(int pid)
