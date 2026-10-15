@@ -32,4 +32,26 @@ public class KillTests
 
         await CommandTestHelper.RunExecuteAsync(command);
     }
+
+    [Fact]
+    public void ParseNetstatListenPids_ShouldKeepOnlyListeningTcpRowsOfThatPort()
+    {
+        var output = string.Join('\n',
+            "活动连接",
+            string.Empty,
+            "  协议  本地地址          外部地址          状态           PID",
+            "  TCP   0.0.0.0:8080      0.0.0.0:0         LISTENING       4242",
+            "  TCP   127.0.0.1:8080    127.0.0.1:52000   ESTABLISHED     9999",
+            "  TCP   0.0.0.0:8081      0.0.0.0:0         LISTENING       5151",
+            "  UDP   0.0.0.0:8080      *:*                               7777",
+            "  TCP   [::]:8080         [::]:0            LISTENING       4242");
+
+        Assert.Equal(new List<int> { 4242 }, Kill.ParseNetstatListenPids(output, 8080));
+    }
+
+    [Fact]
+    public void ParseLsofPids_ShouldDeduplicateAndIgnoreNoise()
+    {
+        Assert.Equal(new List<int> { 11, 22 }, Kill.ParseLsofPids("11\n22\n11\n\n"));
+    }
 }
